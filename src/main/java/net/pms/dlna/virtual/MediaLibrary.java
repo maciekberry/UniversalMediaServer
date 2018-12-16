@@ -1,14 +1,22 @@
 package net.pms.dlna.virtual;
 
 import net.pms.Messages;
+import net.pms.PMS;
+import net.pms.configuration.PmsConfiguration;
 import net.pms.database.TableFilesStatus;
 import net.pms.util.FullyPlayedAction;
+import net.pms.util.UniqueList;
 
 /**
  * This is the Media Library folder which contains dynamic folders populated
  * by the SQL (h2) database.
  */
 public class MediaLibrary extends VirtualFolder {
+	
+	//MACIEK
+	private static final PmsConfiguration configuration = PMS.getConfiguration();
+
+	
 	private MediaLibraryFolder allFolder;
 
 	public MediaLibraryFolder getAllFolder() {
@@ -29,7 +37,7 @@ public class MediaLibrary extends VirtualFolder {
 		init();
 	}
 
-	private void init() {
+	private void init() {		
 		// Videos folder
 		VirtualFolder vfVideo = new VirtualFolder(Messages.getString("PMS.34"), null);
 
@@ -163,38 +171,58 @@ public class MediaLibrary extends VirtualFolder {
 			vfVideo.addChild(mlfVideo05);
 		}
 		addChild(vfVideo);
-
+		
+		
 		VirtualFolder vfAudio = new VirtualFolder(Messages.getString("PMS.1"), null);
 		allFolder = new MediaLibraryFolder(Messages.getString("PMS.11"), "select FILENAME, MODIFIED from FILES F, AUDIOTRACKS A where F.ID = A.FILEID AND F.TYPE = 1 ORDER BY F.FILENAME ASC", MediaLibraryFolder.FILES);
-		vfAudio.addChild(allFolder);
 		playlistFolder = new MediaLibraryFolder(Messages.getString("PMS.9"), "select FILENAME, MODIFIED from FILES F WHERE F.TYPE = 16 ORDER BY F.FILENAME ASC", MediaLibraryFolder.PLAYLISTS);
-		vfAudio.addChild(playlistFolder);
 		artistFolder = new MediaLibraryFolder(Messages.getString("PMS.13"), new String[]{"SELECT DISTINCT COALESCE(A.ALBUMARTIST, A.ARTIST) as ARTIST FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 ORDER BY ARTIST ASC", "select FILENAME, MODIFIED  from FILES F, AUDIOTRACKS A where F.ID = A.FILEID AND F.TYPE = 1 AND COALESCE(A.ALBUMARTIST, A.ARTIST) = '${0}'"}, new int[]{MediaLibraryFolder.TEXTS, MediaLibraryFolder.FILES});
-		vfAudio.addChild(artistFolder);
 		albumFolder = new MediaLibraryFolder(Messages.getString("PMS.16"), new String[]{"SELECT DISTINCT A.ALBUM FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 ORDER BY A.ALBUM ASC", "select FILENAME, MODIFIED from FILES F, AUDIOTRACKS A where F.ID = A.FILEID AND F.TYPE = 1 AND A.ALBUM = '${0}'"}, new int[]{MediaLibraryFolder.TEXTS, MediaLibraryFolder.FILES});
-		vfAudio.addChild(albumFolder);
 		genreFolder = new MediaLibraryFolder(Messages.getString("PMS.19"), new String[]{"SELECT DISTINCT A.GENRE FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 ORDER BY A.GENRE ASC", "select FILENAME, MODIFIED from FILES F, AUDIOTRACKS A where F.ID = A.FILEID AND F.TYPE = 1 AND A.GENRE = '${0}'"}, new int[]{MediaLibraryFolder.TEXTS, MediaLibraryFolder.FILES});
-		vfAudio.addChild(genreFolder);
 		MediaLibraryFolder mlf6 = new MediaLibraryFolder(Messages.getString("PMS.22"), new String[]{
 				"SELECT DISTINCT COALESCE(A.ALBUMARTIST, A.ARTIST) as ARTIST FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 ORDER BY ARTIST ASC",
 				"SELECT DISTINCT A.ALBUM FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 AND COALESCE(A.ALBUMARTIST, A.ARTIST) = '${0}' ORDER BY A.ALBUM ASC",
 				"select FILENAME, MODIFIED from FILES F, AUDIOTRACKS A where F.ID = A.FILEID AND F.TYPE = 1 AND COALESCE(A.ALBUMARTIST, A.ARTIST) = '${1}' AND A.ALBUM = '${0}' ORDER BY A.TRACK ASC, F.FILENAME ASC"}, new int[]{MediaLibraryFolder.TEXTS, MediaLibraryFolder.TEXTS, MediaLibraryFolder.FILES});
-		vfAudio.addChild(mlf6);
 		MediaLibraryFolder mlf7 = new MediaLibraryFolder(Messages.getString("PMS.26"), new String[]{
 				"SELECT DISTINCT A.GENRE FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 ORDER BY A.GENRE ASC",
 				"SELECT DISTINCT COALESCE(A.ALBUMARTIST, A.ARTIST) as ARTIST FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 AND A.GENRE = '${0}' ORDER BY ARTIST ASC",
 				"SELECT DISTINCT A.ALBUM FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 AND A.GENRE = '${1}' AND COALESCE(A.ALBUMARTIST, A.ARTIST) = '${0}' ORDER BY A.ALBUM ASC",
 				"select FILENAME, MODIFIED from FILES F, AUDIOTRACKS A where F.ID = A.FILEID AND F.TYPE = 1 AND A.GENRE = '${2}' AND COALESCE(A.ALBUMARTIST, A.ARTIST) = '${1}' AND A.ALBUM = '${0}' ORDER BY A.TRACK ASC, F.FILENAME ASC"}, new int[]{MediaLibraryFolder.TEXTS, MediaLibraryFolder.TEXTS, MediaLibraryFolder.TEXTS, MediaLibraryFolder.FILES});
-		vfAudio.addChild(mlf7);
 		MediaLibraryFolder mlfAudioDate = new MediaLibraryFolder(Messages.getString("PMS.12"), new String[]{"SELECT FORMATDATETIME(MODIFIED, 'yyyy MM d') FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 ORDER BY F.MODIFIED DESC", "select FILENAME, MODIFIED from FILES F, AUDIOTRACKS A where F.ID = A.FILEID AND F.TYPE = 1 AND FORMATDATETIME(MODIFIED, 'yyyy MM d') = '${0}' ORDER BY A.TRACK ASC, F.FILENAME ASC"}, new int[]{MediaLibraryFolder.TEXTS_NOSORT, MediaLibraryFolder.FILES});
-		vfAudio.addChild(mlfAudioDate);
 
 		MediaLibraryFolder mlf8 = new MediaLibraryFolder(Messages.getString("PMS.28"), new String[]{
 				"SELECT ID FROM REGEXP_RULES ORDER BY ORDR ASC",
 				"SELECT DISTINCT COALESCE(A.ALBUMARTIST, A.ARTIST) as ARTIST FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 AND ARTIST REGEXP (SELECT RULE FROM REGEXP_RULES WHERE ID = '${0}') ORDER BY ARTIST ASC",
 				"SELECT DISTINCT A.ALBUM FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 AND COALESCE(A.ALBUMARTIST, A.ARTIST) = '${0}' ORDER BY A.ALBUM ASC",
 				"SELECT FILENAME, MODIFIED FROM FILES F, AUDIOTRACKS A WHERE F.ID = A.FILEID AND F.TYPE = 1 AND COALESCE(A.ALBUMARTIST, A.ARTIST) = '${1}' AND A.ALBUM = '${0}'"}, new int[]{MediaLibraryFolder.TEXTS, MediaLibraryFolder.TEXTS, MediaLibraryFolder.TEXTS, MediaLibraryFolder.FILES});
-		vfAudio.addChild(mlf8);
+		
+
+		UniqueList<String> audioList = configuration.getAudioMenuList();
+		//AllTracks,AllPlaylists,Artist,Album,Genre,Artist/Album,Genre/Artist/Album,Date,Letter/Artist/Album
+		for (String item: audioList) {
+			switch(item) {
+			case "alltracks": vfAudio.addChild(allFolder);break;
+			case "allplaylists": vfAudio.addChild(playlistFolder);break;
+			case "artist": vfAudio.addChild(artistFolder);break;
+			case "album": vfAudio.addChild(albumFolder);break;
+			case "genre": vfAudio.addChild(genreFolder);break;
+			case "artist/album": vfAudio.addChild(mlf6);break;
+			case "genre/artist/album": vfAudio.addChild(mlf7);break;
+			case "date": vfAudio.addChild(mlfAudioDate);break;
+			case "letter/artist/album": vfAudio.addChild(mlf8);break;
+			}
+		}
+		
+		
+//		vfAudio.addChild(allFolder);
+//		vfAudio.addChild(playlistFolder);
+//		vfAudio.addChild(artistFolder);
+//		vfAudio.addChild(albumFolder);
+//		vfAudio.addChild(genreFolder);
+//		vfAudio.addChild(mlf6);
+//		vfAudio.addChild(mlf7);
+//		vfAudio.addChild(mlfAudioDate);
+//		vfAudio.addChild(mlf8);
 		addChild(vfAudio);
 
 		VirtualFolder vfImage = new VirtualFolder(Messages.getString("PMS.31"), null);

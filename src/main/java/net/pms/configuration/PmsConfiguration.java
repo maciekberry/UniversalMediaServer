@@ -101,6 +101,10 @@ public class PmsConfiguration extends RendererConfiguration {
 	private static final ReentrantReadWriteLock enginesPriorityLock = new ReentrantReadWriteLock();
 	private static UniqueList<PlayerId> enginesPriority;
 
+	private static volatile boolean audioMenuListBuilt = false;
+	private static final ReentrantReadWriteLock audioMenuListLock = new ReentrantReadWriteLock();
+	private static UniqueList<String> audioMenuList;
+	
 	/*
 	 * MEncoder has a hardwired maximum of 8 threads for -lavcopts and 16
 	 * for -lavdopts.
@@ -121,6 +125,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_AUDIO_CHANNEL_COUNT = "audio_channels";
 	protected static final String KEY_AUDIO_EMBED_DTS_IN_PCM = "audio_embed_dts_in_pcm";
 	protected static final String KEY_AUDIO_LANGUAGES = "audio_languages";
+	protected static final String KEY_AUDIO_MENU_TREE = "audio_menu_tree";
 	protected static final String KEY_AUDIO_REMUX_AC3 = "audio_remux_ac3";
 	protected static final String KEY_AUDIO_RESAMPLE = "audio_resample";
 	protected static final String KEY_AUDIO_SUB_LANGS = "audio_subtitles_languages";
@@ -617,6 +622,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (usableMemory > MAX_MAX_MEMORY_DEFAULT_SIZE) {
 			MAX_MAX_MEMORY_BUFFER_SIZE = (int) usableMemory;
 		}
+		
 	}
 
 	/**
@@ -1233,7 +1239,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		} else if (log) {
 			LOGGER.info("Language not specified, defaulting to OS language.");
 		}
-
+		
 		if (locale == null) {
 			locale = Languages.toLocale(Locale.getDefault());
 			if (log && locale == null) {
@@ -2764,6 +2770,7 @@ public class PmsConfiguration extends RendererConfiguration {
 			}
 		}
 
+		
 		engines = configuration.getString(KEY_ENGINES_PRIORITY);
 		if (StringUtils.isNotBlank(engines)) {
 			String capitalizedEngines = StringUtil.caseReplace(engines.trim(), player.id().toString());
@@ -2773,6 +2780,44 @@ public class PmsConfiguration extends RendererConfiguration {
 		}
 	}
 
+	/**
+	 * MACIEK.
+	 */
+	private void buildAudioMenuList() {
+		if (audioMenuListBuilt) {
+			return;
+		}
+		audioMenuListLock.writeLock().lock();
+		try {
+			// Not a bug, using double checked locking
+			if (audioMenuListBuilt) {
+				return;
+			}
+			String audioMenuString = configuration.getString(KEY_AUDIO_MENU_TREE);
+			audioMenuList = stringToStringSet(audioMenuString);
+//			if (isBlank(enginesPriorityString)) {
+//				configuration.setProperty(KEY_ENGINES_PRIORITY, collectionToString(enginesPriority));
+//			}
+			audioMenuListBuilt = true;
+		} finally {
+			audioMenuListLock.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * MACIEK
+	 */
+	public UniqueList<String> getAudioMenuList() {
+		buildAudioMenuList();
+		audioMenuListLock.readLock().lock();
+		try {
+			return new UniqueList<String>(audioMenuList);
+		} finally {
+			audioMenuListLock.readLock().unlock();
+		}
+	}	
+
+	
 	/**
 	 * Lazy implementation, call before accessing {@link #enginesPriority}.
 	 */
@@ -2796,7 +2841,7 @@ public class PmsConfiguration extends RendererConfiguration {
 			enginesPriorityLock.writeLock().unlock();
 		}
 	}
-
+		
 	/**
 	 * Gets a {@link UniqueList} of the {@link PlayerId}s ordered by priority.
 	 * Returns a new instance, any modifications won't affect priority list.
@@ -2998,6 +3043,28 @@ public class PmsConfiguration extends RendererConfiguration {
 			} else {
 				LOGGER.warn("Unknown transcoding engine \"{}\"", s);
 			}
+		}
+		return output;
+	}
+
+	private static UniqueList<String> stringToStringSet(String input) {
+		UniqueList<String> output = new UniqueList<>();
+		if (isBlank(input)) {
+		//	output.addAll(StandardPlayerId.ALL);
+			//xxx
+			return output;
+		}
+		input = input.trim().toLowerCase(Locale.ROOT);
+		if ("none".equals(input)) {
+			return output;
+		}
+		for (String s : StringUtils.split(input, LIST_SEPARATOR)) {
+		//	PlayerId playerId = StandardPlayerId.toPlayerID(s);
+		//	if (playerId != null) {
+				output.add(s);
+		//	} else {
+		//		LOGGER.warn("Unknown transcoding engine \"{}\"", s);
+		//	}
 		}
 		return output;
 	}
