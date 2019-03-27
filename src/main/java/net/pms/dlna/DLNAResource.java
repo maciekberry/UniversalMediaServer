@@ -4789,4 +4789,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		scaleHeight = Player.convertToModX(scaleHeight, 4);
 		return scaleWidth + "x" + scaleHeight;
 	}
+
+	public boolean isAddToMediaLibrary() {
+		return true;
+	}
 }
