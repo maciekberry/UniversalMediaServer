@@ -5155,5 +5155,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				OpenSubtitle.backgroundLookupAndAdd(file, media);
 			}
 		}
+
+	public boolean isAddToMediaLibrary() {
+		return true;
 	}
 }
