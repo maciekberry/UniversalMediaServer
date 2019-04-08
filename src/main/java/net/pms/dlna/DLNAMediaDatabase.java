@@ -842,6 +842,10 @@ public class DLNAMediaDatabase implements Runnable {
 	 * @throws SQLException if an SQL error occurs during the operation.
 	 */
 	public synchronized void insertOrUpdateData(String name, long modified, int type, DLNAMediaInfo media) throws SQLException {
+		
+		LOGGER.warn(
+				"XXXX insertOrUpdateData " + name);
+		
 		try (
 			Connection connection = getConnection()
 		) {

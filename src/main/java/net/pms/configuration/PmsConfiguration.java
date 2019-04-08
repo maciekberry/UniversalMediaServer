@@ -183,6 +183,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_FOLDERS = "folders";
 	protected static final String KEY_FOLDERS_IGNORED = "folders_ignored";
 	protected static final String KEY_FOLDERS_MONITORED = "folders_monitored";
+	protected static final String KEY_FOLDERS_ADDMEDIALIBRARY = "folders_added_to_medialibrary";
+	protected static final String KEY_FOLDERS_SHOWSEPARATEFOLDERS = "folders_shown_as_separate";
 	protected static final String KEY_FONT = "subtitles_font";
 	protected static final String KEY_FORCE_EXTERNAL_SUBTITLES = "force_external_subtitles";
 	protected static final String KEY_FORCE_TRANSCODE_FOR_EXTENSIONS = "force_transcode_for_extensions";
@@ -3026,6 +3028,18 @@ public class PmsConfiguration extends RendererConfiguration {
 	private ArrayList<Path> monitoredFolders;
 
 	@GuardedBy("sharedFoldersLock")
+	private boolean addMediaLibraryFoldersRead;
+
+	@GuardedBy("sharedFoldersLock")
+	private ArrayList<Path> addMediaLibraryFolders;
+
+	@GuardedBy("sharedFoldersLock")
+	private boolean showAsSeparateFoldersRead;
+
+	@GuardedBy("sharedFoldersLock")
+	private ArrayList<Path> showAsSeparateFolders;
+
+	@GuardedBy("sharedFoldersLock")
 	private boolean ignoredFoldersRead;
 
 	@GuardedBy("sharedFoldersLock")
@@ -3089,6 +3103,41 @@ public class PmsConfiguration extends RendererConfiguration {
 		}
 	}
 
+	/**
+	 * @return The {@link List} of {@link Path}s of xxxx folders.
+	 */
+	@Nonnull
+	public List<Path> getAddToLibraryFolders() {
+		synchronized (sharedFoldersLock) {
+			if (isSharedFoldersEmpty()) {
+				setSharedFoldersToDefault();
+			}
+			if (!addMediaLibraryFoldersRead) {
+				addMediaLibraryFolders = getFolders(KEY_FOLDERS_ADDMEDIALIBRARY);
+				addMediaLibraryFoldersRead = true;
+			}
+			return new ArrayList<>(addMediaLibraryFolders);
+		}
+	}
+
+	/**
+	 * @return The {@link List} of {@link Path}s of xxxx folders.
+	 */
+	@Nonnull
+	public List<Path> getShowAsSeparateFolders() {
+		synchronized (sharedFoldersLock) {
+			if (isSharedFoldersEmpty()) {
+				setSharedFoldersToDefault();
+			}
+			if (!showAsSeparateFoldersRead) {
+				showAsSeparateFolders = getFolders(KEY_FOLDERS_SHOWSEPARATEFOLDERS);
+				showAsSeparateFoldersRead = true;
+			}
+			return new ArrayList<>(showAsSeparateFolders);
+		}
+	}
+
+	
 	/**
 	 * @return The {@link List} of {@link Path}s of ignored folders.
 	 */
@@ -3237,14 +3286,27 @@ public class PmsConfiguration extends RendererConfiguration {
 					monitoredFolders.clear();
 					monitoredFoldersRead = true;
 				}
+				if (!addMediaLibraryFoldersRead || !addMediaLibraryFolders.isEmpty()) {
+					configuration.setProperty(KEY_FOLDERS_ADDMEDIALIBRARY, "");
+					addMediaLibraryFolders.clear();
+					addMediaLibraryFoldersRead = true;
+				}
+				if (!showAsSeparateFoldersRead || !showAsSeparateFolders.isEmpty()) {
+					configuration.setProperty(KEY_FOLDERS_SHOWSEPARATEFOLDERS, "");
+					showAsSeparateFolders.clear();
+					showAsSeparateFoldersRead = true;
+				}
 			}
 			return;
 		}
 		String listSeparator = String.valueOf(LIST_SEPARATOR);
 		ArrayList<Path> tmpSharedfolders = new ArrayList<>();
 		ArrayList<Path> tmpMonitoredFolders = new ArrayList<>();
+		ArrayList<Path> tmpAddMediaLibraryFolders = new ArrayList<>();
+		ArrayList<Path> tmpShowAsSeparateFolders = new ArrayList<>();
+
 		for (Vector rowVector : tableVector) {
-			if (rowVector != null && rowVector.size() == 2 && rowVector.get(0) instanceof String) {
+			if (rowVector != null  && rowVector.size() == 4 && rowVector.get(0) instanceof String) {
 				String folderPath = (String) rowVector.get(0);
 				/*
 				 * Escape embedded commas. Note: Backslashing isn't safe as it
@@ -3257,6 +3319,12 @@ public class PmsConfiguration extends RendererConfiguration {
 				tmpSharedfolders.add(folder);
 				if ((boolean) rowVector.get(1)) {
 					tmpMonitoredFolders.add(folder);
+				}
+				if ((boolean) rowVector.get(2)) {
+					tmpAddMediaLibraryFolders.add(folder);
+				}
+				if ((boolean) rowVector.get(3)) {
+					tmpShowAsSeparateFolders.add(folder);
 				}
 			} else {
 				LOGGER.error("Unexpected vector content in setSharedFolders(), saving of shared folders failed");
@@ -3274,6 +3342,16 @@ public class PmsConfiguration extends RendererConfiguration {
 				monitoredFolders = tmpMonitoredFolders;
 				monitoredFoldersRead = true;
 			}
+			if (!addMediaLibraryFoldersRead || !addMediaLibraryFolders.equals(tmpMonitoredFolders)) {
+				configuration.setProperty(KEY_FOLDERS_ADDMEDIALIBRARY, StringUtils.join(tmpAddMediaLibraryFolders, LIST_SEPARATOR));
+				addMediaLibraryFolders = tmpAddMediaLibraryFolders;
+				addMediaLibraryFoldersRead = true;
+			}
+			if (!showAsSeparateFoldersRead || !showAsSeparateFolders.equals(tmpMonitoredFolders)) {
+				configuration.setProperty(KEY_FOLDERS_SHOWSEPARATEFOLDERS, StringUtils.join(tmpShowAsSeparateFolders, LIST_SEPARATOR));
+				showAsSeparateFolders = tmpShowAsSeparateFolders;
+				showAsSeparateFoldersRead = true;
+			}
 		}
 	}
 
@@ -3289,6 +3367,12 @@ public class PmsConfiguration extends RendererConfiguration {
 			monitoredFolders = new ArrayList<>(RootFolder.getDefaultFolders());
 			configuration.setProperty(KEY_FOLDERS_MONITORED, StringUtils.join(monitoredFolders, LIST_SEPARATOR));
 			monitoredFoldersRead = true;
+			addMediaLibraryFolders = new ArrayList<>(RootFolder.getDefaultFolders());
+			configuration.setProperty(KEY_FOLDERS_ADDMEDIALIBRARY, StringUtils.join(addMediaLibraryFolders, LIST_SEPARATOR));
+			addMediaLibraryFoldersRead = true;
+			showAsSeparateFolders = new ArrayList<>(RootFolder.getDefaultFolders());
+			configuration.setProperty(KEY_FOLDERS_SHOWSEPARATEFOLDERS, StringUtils.join(showAsSeparateFolders, LIST_SEPARATOR));
+			showAsSeparateFoldersRead = true;
 		}
 	}
 

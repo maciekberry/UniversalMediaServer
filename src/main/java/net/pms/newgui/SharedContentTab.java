@@ -61,7 +61,10 @@ import org.slf4j.LoggerFactory;
 
 public class SharedContentTab {
 	private static final Vector<String> FOLDERS_COLUMN_NAMES = new Vector<>(
-		Arrays.asList(new String[] {Messages.getString("Generic.Folder"), Messages.getString("FoldTab.65")})
+		Arrays.asList(new String[] {Messages.getString("Generic.Folder"), 
+				Messages.getString("FoldTab.65"),
+				Messages.getString("FoldTab.77"),
+				Messages.getString("FoldTab.78")})
 	);
 	public static final String ALL_DRIVES = Messages.getString("FoldTab.0");
 	private static final Logger LOGGER = LoggerFactory.getLogger(SharedContentTab.class);
@@ -247,6 +250,8 @@ public class SharedContentTab {
 		FontMetrics metrics = cellRenderer.getFontMetrics(cellRenderer.getFont());
 		sharedFolders.setRowHeight(metrics.getLeading() + metrics.getMaxAscent() + metrics.getMaxDescent() + 4);
 		sharedFolders.setIntercellSpacing(new Dimension(8, 2));
+		
+		sharedFolders.getTableHeader().setPreferredSize(new Dimension(sharedFolders.getColumnModel().getTotalColumnWidth(),32));
 
 		final JPanel tmpsharedPanel = sharedPanel;
 
@@ -267,11 +272,11 @@ public class SharedContentTab {
 					if (firstSelectedRow >= 0) {
 						((SharedFoldersTableModel) sharedFolders.getModel()).insertRow(
 							firstSelectedRow,
-							new Object[]{chooser.getSelectedFile().getAbsolutePath(), true}
+							new Object[]{chooser.getSelectedFile().getAbsolutePath(), true, true, true}
 						);
 					} else {
 						((SharedFoldersTableModel) sharedFolders.getModel()).addRow(
-							new Object[]{chooser.getSelectedFile().getAbsolutePath(), true}
+							new Object[]{chooser.getSelectedFile().getAbsolutePath(), true, true, true}
 						);
 					}
 				}
@@ -608,10 +613,15 @@ public class SharedContentTab {
 		Vector<Vector<?>> newDataVector = new Vector<>();
 		if (!folders.isEmpty()) {
 			List<Path> foldersMonitored = configuration.getMonitoredFolders();
+			List<Path> foldersAddToLibrary = configuration.getAddToLibraryFolders();
+			List<Path> foldersShowAsSeparate = configuration.getShowAsSeparateFolders();
 			for (Path folder : folders) {
 				Vector rowVector = new Vector();
 				rowVector.add(folder.toString());
 				rowVector.add(Boolean.valueOf(foldersMonitored.contains(folder)));
+				rowVector.add(Boolean.valueOf(foldersAddToLibrary.contains(folder)));
+				rowVector.add(Boolean.valueOf(foldersShowAsSeparate.contains(folder)));
+				
 				newDataVector.add(rowVector);
 			}
 		}
@@ -649,21 +659,19 @@ public class SharedContentTab {
 
 		@Override
 		public Class<?> getColumnClass(int columnIndex) {
-			return columnIndex == 1 ? Boolean.class : String.class;
+			return columnIndex != 0 ? Boolean.class : String.class;
 		}
 
 		@Override
 		public boolean isCellEditable(int row, int column) {
-			return column == 1;
+			return column > 0;
 		}
 
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		@Override
 		public void setValueAt(Object aValue, int row, int column) {
 			Vector rowVector = (Vector) dataVector.elementAt(row);
-			if (aValue instanceof Boolean && column == 1) {
-				rowVector.setElementAt(aValue, 1);
-			} else {
+			if (aValue instanceof Boolean && column > 0) {
 				rowVector.setElementAt(aValue, column);
 			}
 			fireTableCellUpdated(row, column);
