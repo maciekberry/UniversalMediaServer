@@ -450,7 +450,7 @@ public class RootFolder extends DLNAResource {
 		List<RealFile> resources = new ArrayList<>();
 		List<Path> folders = configuration.getSharedFolders();
 		List<Path> ignoredList = configuration.getIgnoredFolders();
-
+		
 		if (!ignoredList.isEmpty()) {
 			for (Iterator<Path> iterator = folders.iterator(); iterator.hasNext();) {
 				Path path = iterator.next();
@@ -461,7 +461,12 @@ public class RootFolder extends DLNAResource {
 		}
 
 		for (Path folder : folders) {
-			resources.add(new RealFile(folder.toFile()));
+			RealFile f = new RealFile(folder.toFile());
+			
+			f.getConf().setShowInMediaLibrary(configuration.getAddToLibraryFolders().contains(folder));
+			f.getConf().setShowAsSeparate(configuration.getShowAsSeparateFolders().contains(folder));
+			
+			resources.add(f);
 		}
 
 		if (configuration.getSearchFolder()) {

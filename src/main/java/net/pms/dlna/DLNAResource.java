@@ -1195,9 +1195,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 	public synchronized List<DLNAResource> getDLNAResources(String objectId, boolean returnChildren, int start, int count, RendererConfiguration renderer, String searchStr) {
 		
-		LOGGER.warn("XXXXX GOT REQUEST FOR getDLNAResources objectId={}, returnChildren={}, start={}, count={}", objectId, returnChildren, start, count);
+		LOGGER.debug("Got request for getDLNAResources objectId={}, returnChildren={}, start={}, count={}", objectId, returnChildren, start, count);
 
-		
 		ArrayList<DLNAResource> resources = new ArrayList<>();
 
 		// Get/create/reconstruct it if it's a Temp item
@@ -1216,14 +1215,14 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			
 			ListIterator<DLNAResource> iter = dlna.getChildren().listIterator();
 			while(iter.hasNext()){
-			    if(iter.next().getClass().getName() == "net.pms.dlna.RealFile") {
-			        iter.remove();
+				DLNAResource n = iter.next();
+			    if (n instanceof RealFile) {
+			    	RealFile rf = (RealFile)n;
+			    	if (!rf.getConf().isShowAsSeparate())
+			    		iter.remove();
 			    }
 			}
 			
-
-//			if (child.getClass().getName() != "net.pms.dlna.RealFile") {
-
 		} else {
 			dlna = PMS.getGlobalRepo().get(ids[ids.length - 1]);
 		}
@@ -1252,7 +1251,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					count = dlna.getChildren().size();
 
 				}
-				//count = 2;
+				
 				if (count > 0) {
 					ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(count);
 
@@ -1273,12 +1272,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					for (int i = start; i < start + count && i < dlna.getChildren().size(); i++) {
 						final DLNAResource child = dlna.getChildren().get(i);
 						if (child != null) {
-							LOGGER.warn("XXXXX ADDED CHILD {}", child.getClass().getName());
-
-								tpe.execute(child);
-
-								resources.add(child);
-						
+							LOGGER.trace("Returning a child {} of class {}", child.getFileName(), child.getClass().getName());
+							tpe.execute(child);
+							resources.add(child);						
 						} else {
 							LOGGER.warn("null child at index {} in {}", i, systemName);
 						}
@@ -1295,7 +1291,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				}
 			}
 		}
-		LOGGER.warn("XXXXX ADDED {} CHILDREN", resources.size());
+		LOGGER.trace("Added {} children to this ressource", resources.size());
 
 		return resources;
 	}
@@ -5176,9 +5172,5 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				OpenSubtitle.backgroundLookupAndAdd(file, media);
 			}
 		}
-	}
-
-	public boolean isAddToMediaLibrary() {
-		return true;
 	}
 }

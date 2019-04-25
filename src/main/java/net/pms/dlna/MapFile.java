@@ -272,7 +272,7 @@ public class MapFile extends DLNAResource {
 						// Otherwise add the file
 						RealFile rf = new RealFile(f);
 						//we need to propagate the flag in ordet to make all hierarchy stay outside the media library if needed
-						rf.getConf().setAddToMediaLibrary(this.getConf().isAddToMediaLibrary());
+						rf.getConf().setShowInMediaLibrary(this.getConf().isShowInMediaLibrary());
 						if (searchList != null) {
 							searchList.add(rf);
 						}
@@ -633,10 +633,5 @@ public class MapFile extends DLNAResource {
 		}
 		return null;
 	}
-	
-	@Override
-	public boolean isAddToMediaLibrary() {
-		return getConf().isAddToMediaLibrary();
-	}
-	
+		
 }

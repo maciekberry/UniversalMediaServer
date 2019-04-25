@@ -31,7 +31,8 @@ public class MapFileConfiguration {
 	private List<MapFileConfiguration> children;
 	private List<File> files;
 	
-	private boolean addToMediaLibrary = true;
+	private boolean showInMediaLibrary = true;
+	private boolean showAsSeparate = true;
 
 	public String getName() {
 		return name;
@@ -45,8 +46,12 @@ public class MapFileConfiguration {
 		return files;
 	}
 
-	public boolean isAddToMediaLibrary() {
-		return addToMediaLibrary;
+	public boolean isShowInMediaLibrary() {
+		return showInMediaLibrary;
+	}
+	
+	public boolean isShowAsSeparate() {
+		return showAsSeparate;
 	}
 
 	public void setName(String n) {
@@ -57,10 +62,13 @@ public class MapFileConfiguration {
 		files = f;
 	}
 	
-	public void setAddToMediaLibrary(boolean addToMediaLibrary) {
-		this.addToMediaLibrary = addToMediaLibrary;
+	public void setShowInMediaLibrary(boolean b) {
+		this.showInMediaLibrary = b;
 	}
 
+	public void setShowAsSeparate(boolean b) {
+		this.showAsSeparate = b;
+	}
 
 	public MapFileConfiguration() {
 		children = new ArrayList<>();
@@ -132,6 +140,8 @@ public class MapFileConfiguration {
 		}
 		return null;
 	}
+
+
 }
 
 class FileSerializer implements JsonSerializer<File>, JsonDeserializer<File> {
